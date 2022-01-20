@@ -10,6 +10,8 @@
   "author": "Lorenzo Daneo",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.17.2"
+    "clientside-require": "^4.7.2",
+    "express": "^4.17.2",
+    "gl-matrix": "^3.4.3"
   }
 }

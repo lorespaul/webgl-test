@@ -1,7 +1,18 @@
+let self = this;
+
+(function main(){
+    Promise.all([
+            load('gl-matrix')
+        ]).then(a => {
+            a.forEach(b => Object.keys(b).forEach(k => self[k] = b[k]));
+            draw();
+        });
+})();
+
 //
 // start here
 //
-function main() {
+function draw() {
     const canvas = document.querySelector("#glCanvas");
     // Initialize the GL context
     const gl = canvas.getContext("webgl");
@@ -46,9 +57,6 @@ function main() {
     };
     drawScene(gl, programInfo, initBuffers(gl))
 }
-  
-window.onload = main;
-
 
 
 //
@@ -102,7 +110,7 @@ function loadShader(gl, type, source) {
 }
 
 const positions = [
-     1.0,  1.0,
+    //  1.0,  1.0,
      0.0,  1.0,
      1.0, -1.0,
     -1.0, -1.0,

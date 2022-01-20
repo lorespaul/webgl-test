@@ -12,8 +12,10 @@ let self = this;
 //
 // start here
 //
+let canvas;
+
 function draw() {
-    const canvas = document.querySelector("#glCanvas");
+    canvas = document.querySelector("#glCanvas");
     // Initialize the GL context
     const gl = canvas.getContext("webgl");
 
@@ -119,11 +121,70 @@ function loadShader(gl, type, source) {
     return shader;
 }
 
-const positions = [
-    //  1.0,  1.0,   R, G, B
-     0.0,  1.0,      1.0, 1.0, 0.0,
-     1.0, -1.0,      0.7, 0.0, 1.0,
-    -1.0, -1.0,      0.1, 1.0, 0.6
+const boxVertices = 
+[ // X, Y, Z           R, G, B
+    // Top
+    -1.0, 1.0, -1.0,   0.5, 0.5, 0.5,
+    -1.0, 1.0, 1.0,    0.5, 0.5, 0.5,
+    1.0, 1.0, 1.0,     0.5, 0.5, 0.5,
+    1.0, 1.0, -1.0,    0.5, 0.5, 0.5,
+
+    // Left
+    -1.0, 1.0, 1.0,    0.75, 0.25, 0.5,
+    -1.0, -1.0, 1.0,   0.75, 0.25, 0.5,
+    -1.0, -1.0, -1.0,  0.75, 0.25, 0.5,
+    -1.0, 1.0, -1.0,   0.75, 0.25, 0.5,
+
+    // Right
+    1.0, 1.0, 1.0,    0.25, 0.25, 0.75,
+    1.0, -1.0, 1.0,   0.25, 0.25, 0.75,
+    1.0, -1.0, -1.0,  0.25, 0.25, 0.75,
+    1.0, 1.0, -1.0,   0.25, 0.25, 0.75,
+
+    // Front
+    1.0, 1.0, 1.0,    1.0, 0.0, 0.15,
+    1.0, -1.0, 1.0,    1.0, 0.0, 0.15,
+    -1.0, -1.0, 1.0,    1.0, 0.0, 0.15,
+    -1.0, 1.0, 1.0,    1.0, 0.0, 0.15,
+
+    // Back
+    1.0, 1.0, -1.0,    0.0, 1.0, 0.15,
+    1.0, -1.0, -1.0,    0.0, 1.0, 0.15,
+    -1.0, -1.0, -1.0,    0.0, 1.0, 0.15,
+    -1.0, 1.0, -1.0,    0.0, 1.0, 0.15,
+
+    // Bottom
+    -1.0, -1.0, -1.0,   0.5, 0.5, 1.0,
+    -1.0, -1.0, 1.0,    0.5, 0.5, 1.0,
+    1.0, -1.0, 1.0,     0.5, 0.5, 1.0,
+    1.0, -1.0, -1.0,    0.5, 0.5, 1.0,
+];
+
+const boxIndices =
+[
+    // Top
+    0, 1, 2,
+    0, 2, 3,
+
+    // Left
+    5, 4, 6,
+    6, 4, 7,
+
+    // Right
+    8, 9, 10,
+    8, 10, 11,
+
+    // Front
+    13, 12, 14,
+    15, 14, 12,
+
+    // Back
+    16, 17, 18,
+    16, 18, 19,
+
+    // Bottom
+    21, 20, 22,
+    22, 20, 23
 ];
 
 function initBuffers(gl) {
@@ -150,12 +211,17 @@ function initBuffers(gl) {
     // shape. We do this by creating a Float32Array from the
     // JavaScript array, then use it to fill the current buffer.
   
-    gl.bufferData(gl.ARRAY_BUFFER,
-                  new Float32Array(positions),
-                  gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(boxVertices), gl.STATIC_DRAW);
+
+    // index buffer
+    const indexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(boxIndices), gl.STATIC_DRAW);
+
   
     return {
       position: positionBuffer,
+      index: indexBuffer
     };
 }
 
@@ -217,15 +283,15 @@ function drawScene(gl, programInfo, buffers) {
     // Tell WebGL how to pull out the positions from the position
     // buffer into the vertexPosition attribute.
     {
-        const numComponentsPosition = 2;  // pull out 2 values per iteration
+        const numComponentsPosition = 3;  // pull out 2 values per iteration
         const numComponentsColor = 3;  // pull out 2 values per iteration
         const type = gl.FLOAT;    // the data in the buffer is 32bit floats
         const normalize = false;  // don't normalize
-        const stride = 5 * Float32Array.BYTES_PER_ELEMENT;         // how many bytes to get from one set of values to the next
+        const stride = 6 * Float32Array.BYTES_PER_ELEMENT;         // how many bytes to get from one set of values to the next
                                     // 0 = use type and numComponents above
         const offsetPosition = 0;         // how many bytes inside the buffer to start from
-        const offsetColor = 2 * Float32Array.BYTES_PER_ELEMENT;
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
+        const offsetColor = 3 * Float32Array.BYTES_PER_ELEMENT;
+        // gl.bindBuffer(gl.ARRAY_BUFFER, buffers.index);
         gl.vertexAttribPointer(
             programInfo.attribLocations.vertexPosition,
             numComponentsPosition,
@@ -247,6 +313,10 @@ function drawScene(gl, programInfo, buffers) {
     // Tell WebGL to use our program when drawing
   
     gl.useProgram(programInfo.program);
+
+    // mat4.identity(worldMatrix);
+	mat4.lookAt(modelViewMatrix, [0, 0, -8], [0, 0, 0], [0, 1, 0]);
+	// mat4.perspective(projectionMatrix, glMatrix.toRadian(45), canvas.clientWidth / canvas.clientHeight, 0.1, 1000.0);
   
     // Set the shader uniforms
   
@@ -267,10 +337,10 @@ function drawScene(gl, programInfo, buffers) {
         const offset = 0;
         
         // gl.drawArrays(gl.TRIANGLE_STRIP, offset, 3);
-        let xRotationMatrix = new Float32Array(16);
-	    let yRotationMatrix = new Float32Array(16);
+        let xRotationMatrix = mat4.create();
+	    let yRotationMatrix = mat4.create();
 
-        const identityMatrix = new Float32Array(16);
+        const identityMatrix = mat4.create();
         mat4.identity(identityMatrix);
         let angle = 0;
 
@@ -283,7 +353,7 @@ function drawScene(gl, programInfo, buffers) {
 
             gl.clearColor(0.0, 0.0, 0.0, 1.0);  // Clear to black, fully opaque
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            gl.drawArrays(gl.TRIANGLE_STRIP, offset, 3);
+            gl.drawElements(gl.TRIANGLES, boxIndices.length, gl.UNSIGNED_SHORT, offset);
 
             requestAnimationFrame(loop);
         };
